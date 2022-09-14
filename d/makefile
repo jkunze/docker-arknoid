@@ -1,11 +1,11 @@
-# UNUSED
-# - from before I understood to use docker-compose on a single service
+# Use mostly for multi-architecture builds and push to docker hub
+# Use docker-compose for ordinary stuff
 
 # Thanks to https://gist.github.com/mpneuried/0594963ad38e68917ef189b4e6a269db
 # Requires gmake (GNU make)
 
 ifndef APP_NAME
-APP_NAME=$(shell sed 's,.*/docker-\(.*\)/stuff,\1,' <<< $(PWD))
+APP_NAME=$(shell sed 's,.*/docker-\(.*\)/d,\1,' <<< $(PWD))
 endif
 ifndef APP_NAME
 $(error APP_NAME undefined; expecting to be in directory named "docker-foo" or to be called with variable setting, as in "APP_NAME=foo make ...")
@@ -62,6 +62,7 @@ tag-version: ## Generate container `latest` tag
 .PHONY: help
 help: ## This help information
 	@echo Makefile targets in this directory are for docker hub repo: $(DOCKER_REPO)/$(APP_NAME)
+	@echo Use 'make mybuilder mabuild' to create and push image to hub.docker.com.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-17s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Docker publish
