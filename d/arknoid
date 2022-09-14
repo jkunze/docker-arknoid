@@ -1,0 +1,602 @@
+#!/usr/bin/env bash
+
+set -u				# use of unset variables throws an error
+export LC_ALL=C			# to deal with unicode errors
+export LANG=en_US.UTF-8
+
+# Noid template is for a random (r) minter, with extended digit (e)
+# pairs separated by digits (d), ending in a check character (k).
+template=reedeedk
+# betanumeric letters
+bletters=bcdfghjkmnpqrstvwxz
+
+tnaan=99999		# test NAAN
+minters=minters		# directory for all preserved docker container state
+mdir=$minters/ark
+
+# regular expression patterns for bash follow re_format(7)
+naanpattern="^[1-9$bletters][0-9]{4}$"
+shoulderpattern="^[$bletters]+[2-9]$"
+naanform=https://n2t.net/e/naan_request
+
+# globals will contain NAAN and Shoulder in effect for a given run
+initialized=
+naan=
+shdr=
+tshdr=
+
+# Globals set by calling shoulder_parse()
+pnaan=		# parsed NAAN
+pshdr=		# parsed Shoulder
+fqnaan=		# parsed Fully Qualified NAAN
+fqshdr=		# parsed Fully Qualified Shoulder
+
+# Options
+force=			# don't require us to be run from a container
+clear=			# on init, by default do not clear out previous data
+verbose=		# be more chatty
+entercontainer=		# unused
+no_exec=		# unused
+
+me=$( basename $0 )
+
+# first arg is currently unused
+function usage {
+
+	cat << EOT
+
+SYNOPSIS                          ($0)
+    $me - tool to mint ARK (Archival Resource Key) identifiers
+
+USAGE
+    $me [options] init
+    $me [options] mkminter [ NAAN[/Shoulder] ]
+    $me [options] mint [ Count [ FQShoulder ] ]
+    $me [options] testmint [ Count ]
+    $me [options] lsminter [ FQShoulder ... ]
+    $me [options] rmminter FQShoulder ...
+    $me [options] test
+    $me [ help ]
+
+DESCRIPTION
+    This script is used to mint globally unique, opaque, random-looking ARK
+    (Archival Resource Key) identifiers. Here, "to mint" means to generate a
+    string of letters and digits suitable for use as an ARK. To create an ARK
+    is to publicize your assignment of a minted string to a thing (eg, for
+    reference purposes). The less that you publicize your ARK assignment, the
+    easier it is to "undo" the act of ARK creation.
+
+    To ensure ARK global uniqueness, the ARK namespace is divided into NAANs
+    (Name Assigning Authority Numbers). NAANs are further (sub)divided into
+    Shoulders, which are useful for delegating responsibility within NAAN
+    namespaces.
+
+    To run this script you will need a NAAN that will appear at the beginning
+    of your ARKs. You may request a NAAN for your organization using the link
+
+        $naanform
+
+    Use the "init" command to initialize the system with the NAAN reserved
+    for you (usually a 5-digit number), or with the test NAAN, 99999.
+
+    The "mkminter" command creates a minter of unique opaque strings consisting
+    of digits, letters (betanumerics actually) and a final check character.
+    With no arugment, it creates a random shoulder using your NAAN, but you may
+    also specify a fully qualified shoulder of your choice. A Shoulder string
+    must start with one or more betanumeric letters ($bletters) and end in
+    a digit. The NAAN should be one that you have been assigned (eg, 12345) via
+    the global ARK NAAN registry. Each minter created with this command can
+    generate 70,728,100 unique ARKs.
+
+    The "mint" command generates Count (default 1) strings suitable for ARK
+    assignments from the "fully qualified" minter name, FQShoulder, which
+    consists of the NAAN, a '/', and the Shoulder string. The "testmint"
+    command is simple shorthand to generate ARKs beginning with $tnaan,
+    which recipients understand to be generally impersistent, untrustworthy,
+    and for test purposes only.
+
+    Use the "lsminter" command with FQShoulder arguments to check for the
+    existence of one or more minters, or use it with no arguments to list all
+    minters available to you. Use the "rmminter" command to remove minters.
+    The "test" command verifies whether the software is working correctly
+    and the "help" command (the default command) outputs documentation.
+
+    Most commands exit with zero status on success and non-zero on error.
+    It is possible to run init on more than one NAAN. This script relies on
+    the Noid (v0.424) software.
+
+ENVIRONMENT
+    This script is meant to run within a docker container. From a terminal
+    window on a computer connected to the docker ecosystem, a running
+    environment could be created and tested with commands such as
+
+        \$ docker-compose build --no-cache $me
+	\$ docker-compose run $me $me test
+	\$ docker-compose run $me
+
+    That last command gives you an interactive shell within the container.
+    From there, for example, you could use these commands to create a minter,
+    to generate 1 ARK, and then to generate 2000 ARKs.
+
+        \$ $me mkminter 98765/z4
+	\$ $me mint 1 98765/z4
+	\$ $me mint 2000 98765/z4
+
+OPTIONS
+    -f force run even if not inside a docker container
+    -c on init, clear out any previous NAAN data
+
+FILES
+    ./minters/ark/<NAAN>/<Shoulder>
+
+EOT
+}
+
+# returns 0 if a non-test shoulder is found, or 1 if not
+#   as a side-effect, sets the global default $naan and $shdr
+# takes one optional NAAN argument to restrict search to just that NAAN
+
+function ark_find_shoulder {
+	
+	local n d s
+	local unaan=${1:-}	# user supplied NAAN
+	[[ ! "$unaan" ]] &&	# if supplied, set the $naan now so that we
+		naan="$unaan"	# will only look under it for first shoulder
+
+	# $mdir is probably $minters/ark
+	[[ ! -d "$mdir" ]] &&
+		return 1
+	for n in $mdir/*		# NAAN directories
+	do
+		d=${n##*/}	# strip NAAN directory down to all but NAAN
+		[[ -d $n && $d =~ $naanpattern ]] && {
+			[[ ! "$naan" ]] &&
+				naan=${d##*/}		
+		}
+	done
+	# the first match becomes the default (eg, anything less than 99999)
+	[[ ! "$naan" || ($naan == $tnaan && "$unaan" != $tnaan) ]] &&
+		return 1		# consider to be not yet initialized
+
+	# if we get here, stop at the first shoulder we find
+	for s in $mdir/$naan/*		# shoulder directories
+	do
+		d=${s##*/}	# strip Shoulder dir down to all but Shoulder
+		[[ -d $s && $d =~ $shoulderpattern ]] && {
+			[[ ! "$shdr" ]] && {
+				shdr=${d##*/}	# at first one found we can
+				return 0	# call it quits with success
+			}
+		}
+	done
+	# if we get here, no shoulder was found, so failure
+	return 1
+}
+
+# takes one arg: $naan
+# pops the first randomized item off the available_shoulders file
+
+function shoulder_pop {
+
+	local naan=$1
+	local shdrs=$mdir/$naan/available_shoulders
+
+	# The "pop" has two steps:
+	# 1. perl 'p' output becomes the new file (minus line 1)
+	# 2. but redirect stderr to stdout to capture first line popped
+
+	perl -pi -e '$. == 1 and print(STDERR), $_ = ""' $shdrs 2>&1
+}
+
+function naan_init {
+
+	naan=${1:-}
+	[[ ! "$naan" =~ $naanpattern ]] && {
+		echo "error: argument ($naan) should be 5 digits with" \
+			"no leading zero" 1>&2
+		return 1
+	}
+	local d=$mdir/$naan
+	[[ -d $d && "$clear" ]] &&
+		rm -fr $d
+
+	# Create a list of available shoulders from a master list of two-char
+	# candidates XY, prescreened so that X is a betanumeric _letter_ and
+	# Y is a digit from 2-9. On init, that list is shuffled so that each
+	# NAAN uses up the list in a different NAAN-specific order. To get that
+	# order, we create an infinite stream of repeated $naan lines via "yes" 
+	# and the --random-source option stops reading when it has enough data.
+	# Each randomized run produces the same order for a given NAAN.
+
+	mkdir -p $d
+	sed -n '/^[b-z][2-9]$/p' original_shoulders \
+		| shuf --random-source=<(yes $naan) \
+		> $mdir/$naan/available_shoulders
+
+	# Create two shoulders based on XY value popped from randomized list.
+	local shdr
+	shdr=$( shoulder_pop $naan ) ||
+		return 1
+	mkminter $naan/$shdr ||
+		return 1
+}
+
+# set up NAAN minter directories for given NAAN and test NAAN
+#   as a side-effect, sets the global default $naan
+
+function ark_init {
+
+	naan=${1:-}
+	[[ ! "$naan" =~ $naanpattern ]] && {
+		echo "error: argument ($naan) expected should be 5 digits" \
+			"with no leading zero" 1>&2
+		return 1
+	}
+	naan_init $naan ||
+		return 1
+	naan_init $tnaan ||
+		return 1
+}
+
+# takes one argument of the form [[ark:[/]]NAAN/]POShoulder, where
+#
+#   POShoulder is a prime-ordinal shoulder (betanumeric letters + digit)
+#
+# returns values via global vars
+
+function shoulder_parse {
+
+	local fqs=${1:-}	# a fully qualified shoulder
+	[[ ! "$fqs" ]] && {	# empty arg is ok
+		# set two globals to be empty
+		pnaan=
+		pshdr=
+		return 0	# a kind of success
+	}
+
+	# this function returns values via globals
+	# patterns below are limited to shell path expansion (globbing)
+	# assume non-empty fully-qualifed shoulder until proven otherwise
+
+	# strip ark:/ from front and any trailing /
+	fqshdr=$( sed 's,^ark:/*\(.*\)/*$,\1,' <<< "$fqs" )
+
+	# set two globals
+	pnaan=${fqshdr%/*}	# strip off any final shoulder part
+	pshdr=${fqshdr##$pnaan}	# strip off any initial NAAN part
+	pshdr=${pshdr##/}	# strip off any initial /
+
+	if [[ "$fqshdr" =~ /.*/ ]]
+	then
+		echo "error: too many /-separated parts in $fqshdr" 1>&2
+		return 1
+	fi
+
+	[[ "$verbose" ]] &&
+		echo "verbose pnaan $pnaan, pshdr $pshdr, fqs $fqs"
+
+	if [[ ! "$pnaan" || ! $pnaan =~ $naanpattern ]]
+	then
+		echo "error: NAAN ($pnaan) should be 5 digits" 1>&2
+		return 1
+	fi
+
+	if [[ "$pshdr" && ! $pshdr =~ $shoulderpattern ]]
+	then
+		echo "error: shoulder ($pshdr) should be one or more betanumeric letters ($bletters) followed by a digit in the range 2-9" 1>&2
+		return 1
+	fi
+	return 0
+}
+
+function mkminter {
+
+	shoulder_parse ${1:-} ||
+		return 1
+	# if we get here, we received a valid or empty shoulder on a known NAAN
+
+	# consider $naan to be defined
+	[[ "$pnaan" ]] && {
+		[[ ! -d $mdir/$pnaan ]] && {
+			echo "error: bad NAAN ($pnaan)" 1>&2
+			return 1
+		}
+		[[ "$pnaan" != $naan ]] &&	# if parsed NAAN not default
+			shdr=			# invalidate default $shdr
+		naan=$pnaan			# switch to parsed NAAN
+	}
+
+	# consider $shdr to be defined
+	if [[ "$pshdr" ]]
+	then
+		shdr=$pshdr
+	else
+		shdr=$( shoulder_pop $naan )	# if empty, pop default
+	fi
+	# when we get here, go forward with $naan and $shdr
+
+	local d="$mdir/$naan/$shdr"
+	if [[ -e "$d" && "$force" ]]
+	then
+		rm -fr "$d" || {
+			echo "error: $d: could not remove" 1>&2
+			return 1
+		}
+	fi
+	if [[ -e "$d" ]]
+	then
+		echo "error: $d: minter exists; use -f to force (by removing current)" 1>&2
+		return 1
+	fi
+	mkdir -p $d
+	noid -f $d dbcreate $shdr.$template long $naan example.org demo
+		#&& cat $d/NOID/README
+	echo Created $naan/$shdr minter.
+}
+
+function lsminter {
+
+	[[ ! "$@" ]] && {
+		ls -d $mdir/*/*[0-9]
+		return 0
+	}
+	local m
+	for m in "$@"
+	do
+		ls -d $mdir/${m#$mdir/}		# strip any redundant path
+	done
+}
+
+function rmminter {
+
+	[[ ! "$@" ]] && {
+		echo "error: no minter specified" 1>&2
+		return 1
+	}
+	local m
+	for m in "$@"
+	do
+		# var substitution below strips any redundant path
+		ls -d $mdir/${m#$mdir/} > /dev/null && {
+			rm -fr $mdir/$m $mdir/${m#$mdir/}
+			continue
+		}
+		echo "error: $m is not a minter -- ignoring" 1>&2
+	done
+}
+
+function ark_mint {
+
+	local count=${1:-1}
+
+	if [[ ! "$count" =~ ^[0-9]+$ ]]
+	then
+		echo "error: first arg ($count) must be a number" 1>&2
+		return 1
+	fi
+
+	shoulder_parse ${2:-} ||
+		return 1
+	# if we get here, we received a valid or empty shoulder on a known NAAN
+
+	# $naan will already have been set during check for being initialized
+	# if the parsed NAAN is non-empty and different from the default NAAN,
+	# we'll need to abandon the shoulder we found earlier
+
+	[[ "$pnaan" ]] && {		# if NAAN needs defining
+		if [[ "$pnaan" != $naan ]]
+		then
+			naan=$pnaan	# use parsed NAAN and abandon shoulder
+			shdr=		# found earlier by unitializing it
+		fi
+		# if here, $naan will be set correctly
+	}
+	[[ "$pnaan" && "$pnaan" != $naan ]] && {
+		naan=$pnaan	# use the new NAAN and abandon shoulder
+		shdr=		# found earlier by unitializing it
+	}
+	[[ ! "$shdr" ]] && {		# if shoulder needs defining
+		if [[ "$pshdr" ]]
+		then			# used parsed shoulder
+			shdr=$pshdr
+		else			# unless it's empty
+			ark_find_shoulder $naan || {
+				echo "error: no shoulder found under NAAN" \
+					"($naan)" 1>&2
+				return 1
+			}
+		fi
+		# if here, $shdr will have been re-set by ark_find_shoulder
+	}
+	noid -f $mdir/$naan/$shdr mint $count \
+		| sed -e 's/^id: /ark:/' -e '/^$/d'
+}
+
+# single command test, called in series by ark_test
+function sctest {
+
+	local number="$1"
+	local pattern="$2"	# pattern is Perl regex with "si" modifiers
+	local command="$3"
+	local description="$4"
+	local status out
+
+	out=$( eval "$command" 2>&1 )
+	status="$?"
+	# -0777 means slurp file mode; note matching modifiers "si"
+	perl -0777 -ne "m{$pattern}si and exit 0; exit 1" <<< "$out"
+	if [[ "$?" == 0 ]]
+	then
+		echo "$number OK - $description"
+		#echo "'$out' does match pattern '$pattern'"
+	else
+		echo "$number NOT OK - $description"
+		echo "'$out' does not match pattern '$pattern'"
+	fi
+	#[[ "$status" == 0 ]] || {
+	#	echo "error: '$command' return status: $status"
+	#}
+}
+
+function ark_test {
+
+	local cmd=$me
+	local tdir=/tmp/arktest
+	local n=0
+	local opts=
+
+	rm -fr $tdir
+	mkdir -p $tdir
+	cp original_shoulders $tdir	# to make file available to init
+	cd $tdir
+	echo "Now running in $tdir as current directory."
+
+        let n++; sctest $n "error:.*init.*first" "$cmd mkminter 88765/z4 " \
+		"initialization required before mkminter"
+        let n++; sctest $n "minters/ark/88765/f7.*/99999/x8" "$cmd init 88765" \
+		"initialization created minters on given and test NAANs"
+        let n++; sctest $n "minters/ark/88765/f7.*/99999/x8" "$cmd lsminter " \
+		"lsminter shows given NAAN and test NAAN"
+        let n++; sctest $n "error: bad NAAN" "$cmd mkminter 12125" \
+		"cannot create a minter on an uninitialized NAAN"
+        let n++; sctest $n "Created 88765/zz2" "$cmd mkminter 88765/zz2 " \
+		"created minter with user-designated 88765/zz2 shoulder"
+        let n++; sctest $n "Created 88765/x8" "$cmd mkminter ark:/88765 " \
+		"created a second minter without designation"
+        let n++; sctest $n "Created 99999/p2" "$cmd mkminter 99999 " \
+		"created a second 99999 minter without designation"
+        let n++; sctest $n \
+		"ark/88765/f7\n.*/x8\n.*/zz2\n.*99999/p2\n.*99999/x8" \
+		"$cmd lsminter " "lsminter finds 5 minters"
+        let n++; sctest $n "ark/88765/f7\n.*/x8\n.*99999/p2\n.*99999/x8" \
+		"$cmd rmminter 88765/zz2; $cmd lsminter " \
+		"rmminter leaves 4 minters"
+        let n++; sctest $n "f74x54g15" "$cmd mint 1 " \
+		"mint 1 from default minter 88765/f7"
+        let n++; sctest $n "99999/x84x54g17" "$cmd mint 1 ark:99999/x8 " \
+		"mint 1 from second test minter"
+        let n++; sctest $n "p24x54g1w\n.*99999/p2154dn7f" "$cmd testmint 2 " \
+		"testmint 2 from first test minter"
+        let n++; sctest $n "Created 88765/r7" "$cmd mkminter " \
+		"create minter with no desination"
+        let n++; sctest $n "ark:88765/f7154dn7q" "$cmd mint 1 " \
+		"mint from default minter"
+	echo Ran $n tests.
+	return
+}
+
+#==========================
+# MAIN
+
+while [[ $# -gt 0 && "$1" =~ ^- ]]
+do
+	case $1 in
+	-f|--force)
+		shift
+		force=1
+		;;
+	-c|--clear)
+		shift
+		clear=1
+		;;
+	-h*|--h*)
+		shift
+		cmd=help
+		;;
+	-v*|--v*)
+		shift
+		verbose=1
+		;;
+	-e)	# enter inside a container if not already inside one yyy unused
+		shift
+		entercontainer=1
+		;;
+	-n)		# yyy unused
+		shift
+		no_exec=1
+		;;
+	*)
+		echo "error: unknown option: $1" 1>&2
+		shift
+		usage
+		exit 1
+	esac
+done
+
+if [[ "${1:-help}" == help ]]
+then
+	usage help
+	exit
+fi
+
+# if we get here, $1 is non-empty
+cmd=$1
+shift
+
+# check if we're running inside a container
+insidedocker=	
+[[ -f /.dockerenv ]] &&
+	insidedocker=1
+[[ ! "$insidedocker" && ! "$force" ]] && {
+	echo "error: script not running inside a container (use -f to force)" \
+		1>&2
+	exit 1
+}
+
+# check if we're initialized or just testing
+ark_find_shoulder &&
+	initialized=1
+
+case $cmd in
+
+init)
+	ark_init "$@"
+	exit
+	;;
+test)
+	ark_test "$@"
+	exit
+	;;
+*)
+	[[ ! "$initialized" ]] && {
+		echo 'error: you need to run the "init" command first' 1>&2
+		echo 'See "'$me help'" for usage information.' 1>&2
+		exit 1
+	}
+	;;
+esac
+
+# if we get here we're initialized, as required by all the following commands
+case $cmd in
+
+mint)
+	ark_mint "$@"
+	exit
+	;;
+testmint)
+	ark_mint "$@" $tnaan
+	exit
+	;;
+lsminter|lsminters)
+	lsminter "$@"
+	exit
+	;;
+mkminter)
+	mkminter "$@"
+	exit
+	;;
+rmminter|rmminters)
+	rmminter "$@"
+	exit
+	;;
+-*)
+	echo "error: options go after the subcommand"
+	exit 1
+	;;
+*)
+	echo "error: unknown subcommand: $cmd"
+	exit 1
+	;;
+esac
+
+exit

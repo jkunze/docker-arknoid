@@ -1,0 +1,11 @@
+services:
+    arknoid:
+        build: .
+        volumes:
+            - minters:/app/home/ark/minters
+    noid:
+        image: jakkbl/noid
+
+volumes:
+    minters:
+
