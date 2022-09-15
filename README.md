@@ -23,7 +23,9 @@
     To ensure ARK global uniqueness, the ARK namespace is divided into NAANs
     (Name Assigning Authority Numbers). NAANs are further (sub)divided into
     Shoulders, which are useful for delegating responsibility within NAAN
-    namespaces.
+    namespaces. The arknoid script creates each minter on its own Shoulder,
+    which looks like YOUR_NAAN/ED, where E is letter and D is a digit. Unless
+    you specify it when making a minter, a random Shoulder will be created.
 
     To run this script you will need a NAAN that will appear at the beginning
     of your ARKs. You may request a NAAN for your organization using the link
