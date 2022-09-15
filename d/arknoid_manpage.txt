@@ -3,14 +3,14 @@ SYNOPSIS                          (./arknoid)
     arknoid - tool to mint ARK (Archival Resource Key) identifiers
 
 USAGE
-    arknoid [options] init
-    arknoid [options] mkminter [ NAAN[/Shoulder] ]
-    arknoid [options] mint [ Count [ FQShoulder ] ]
-    arknoid [options] testmint [ Count ]
-    arknoid [options] lsminter [ FQShoulder ... ]
-    arknoid [options] rmminter FQShoulder ...
-    arknoid [options] test
-    arknoid [ help ]
+        arknoid [options] init
+        arknoid [options] mkminter [ NAAN[/Shoulder] ]
+        arknoid [options] mint [ Count [ FQShoulder ] ]
+        arknoid [options] testmint [ Count ]
+        arknoid [options] lsminter [ FQShoulder ... ]
+        arknoid [options] rmminter FQShoulder ...
+        arknoid [options] test
+        arknoid [ help ]
 
 DESCRIPTION
     This script is used to mint globally unique, opaque, random-looking ARK
@@ -58,8 +58,10 @@ DESCRIPTION
     the "help" command (the default command) outputs documentation.
 
     Most commands exit with zero status on success and non-zero on error.
-    It is possible to run init on more than one NAAN. This script relies on
-    the Noid (v0.424) software.
+    It is possible to run init on more than one NAAN. This script uses the
+    Noid (v0.424) software and adds several features such as default minter
+    and shoulder templates that conform to best practices for creating
+    betanumeric ARKs with primordinal shoulders and check characters.
 
 ENVIRONMENT
     This script was designed to run within its own docker container, although
@@ -92,9 +94,11 @@ DEVELOPER
         $ docker-compose run arknoid
 
 OPTIONS
-    -f force run even if not inside a docker container
-    -c on init, clear out any previous NAAN data
+        -c on init, clear out any previous NAAN data
+        -f force run even if not inside a docker container
+	-h show help information
+	-v be more verbose
 
 FILES
-    ./minters/ark/<NAAN>/<Shoulder>
+        ./minters/ark/<NAAN>/<Shoulder>
 
