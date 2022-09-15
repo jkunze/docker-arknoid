@@ -61,7 +61,7 @@ tag-version: ## Generate container `latest` tag
 
 manpage: ## Generate plain text manual page and README.md
 	./$(APP_NAME) help > $(APP_NAME)_manpage.txt
-	sed -e '/^[A-Z]/s/^/# /' -e 's/^    //' \
+	sed -e '/^[A-Z]/s/^/# /' -e 's/^    //' -e '/^SYNOPSIS/s/S .*/S/' \
 		< $(APP_NAME)_manpage.txt > ../README.md
 
 .PHONY: help
