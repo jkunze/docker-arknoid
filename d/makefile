@@ -59,8 +59,9 @@ tag-version: ## Generate container `latest` tag
 	@echo 'create tag $(VERSION)'
 	docker tag $(APP_NAME) $(DOCKER_REPO)/$(APP_NAME):$(VERSION)
 
-manpage: ## Generate plain text manual page
+manpage: ## Generate plain text manual page and README.md
 	./$(APP_NAME) help > $(APP_NAME)_manpage.txt
+	sed '/^[A-Z]/s/^/# /' $(APP_NAME)_manpage.txt > ../README.md
 
 .PHONY: help
 help: ## This help information

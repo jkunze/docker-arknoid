@@ -1,5 +1,3 @@
-# docker-arknoid
-
 # SYNOPSIS                          (./arknoid)
     arknoid - tool to mint ARK (Archival Resource Key) identifiers
 
