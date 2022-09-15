@@ -63,8 +63,8 @@
     This script was designed to run within its own docker container, although
     it may well run on any system in which the "noid" software is installed.
 
-    From a terminal window running on a computer connected to the dockerhub
-    ecosystem, a running container can be downloaded and built with
+    From a terminal window on a computer connected to the dockerhub ecosystem,
+    a running container can be downloaded and built with
 
         $ docker run -it -d --rm --name arknoid jakkbl/arknoid
 
@@ -72,11 +72,11 @@
 
         $ docker exec -it arknoid arknoid init 12345
 
-    This command generates 3 strings suitable for assignment as ARKs:
+    The next command generates 3 strings suitable for assignment as ARKs:
 
         $ docker exec -it arknoid arknoid mint 3
 
-    This command opens an interactive shell into the container:
+    The next command opens an interactive shell into the container:
 
         $ docker exec -it arknoid /bin/bash
 
