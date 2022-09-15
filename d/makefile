@@ -59,6 +59,9 @@ tag-version: ## Generate container `latest` tag
 	@echo 'create tag $(VERSION)'
 	docker tag $(APP_NAME) $(DOCKER_REPO)/$(APP_NAME):$(VERSION)
 
+manpage: ## Generate plain text manual page
+	./$(APP_NAME) help > $(APP_NAME)_manpage.txt
+
 .PHONY: help
 help: ## This help information
 	@echo Makefile targets in this directory are for docker hub repo: $(DOCKER_REPO)/$(APP_NAME)

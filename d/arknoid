@@ -83,10 +83,10 @@ DESCRIPTION
     of digits, letters (betanumerics actually) and a final check character.
     With no arugment, it creates a random shoulder using your NAAN, but you may
     also specify a fully qualified shoulder of your choice. A Shoulder string
-    must start with one or more betanumeric letters ($bletters) and end in
-    a digit. The NAAN should be one that you have been assigned (eg, 12345) via
-    the global ARK NAAN registry. Each minter created with this command can
-    generate 70,728,100 unique ARKs.
+    must start with one or more betanumeric letters ($bletters) and
+    end in a digit. The NAAN should be one that you have been assigned (eg,
+    12345) via the global ARK NAAN registry. Each minter created with this
+    command can generate 70,728,100 unique ARKs.
 
     The "mint" command generates Count (default 1) strings suitable for ARK
     assignments from the "fully qualified" minter name, FQShoulder, which
@@ -98,29 +98,42 @@ DESCRIPTION
     Use the "lsminter" command with FQShoulder arguments to check for the
     existence of one or more minters, or use it with no arguments to list all
     minters available to you. Use the "rmminter" command to remove minters.
-    The "test" command verifies whether the software is working correctly
-    and the "help" command (the default command) outputs documentation.
+    The "test" command verifies whether the software is working correctly and
+    the "help" command (the default command) outputs documentation.
 
     Most commands exit with zero status on success and non-zero on error.
     It is possible to run init on more than one NAAN. This script relies on
     the Noid (v0.424) software.
 
 ENVIRONMENT
-    This script is meant to run within a docker container. From a terminal
-    window on a computer connected to the docker ecosystem, a running
-    environment could be created and tested with commands such as
+    This script was designed to run within its own docker container, although
+    it may well run on any system in which the "noid" software is installed.
+
+    From a terminal window running on a computer connected to the dockerhub
+    ecosystem, a running container can be downloaded and built with
+
+	\$ docker run -it -d --rm --name arknoid jakkbl/arknoid
+
+    To use a minter requires a one-time initialization of your NAAN, as in,
+
+	\$ docker exec -it arknoid arknoid init 12345
+
+    This command generates 3 strings suitable for assignment as ARKs:
+
+	\$ docker exec -it arknoid arknoid mint 3
+
+    This command opens an interactive shell into the container:
+
+	\$ docker exec -it arknoid /bin/bash
+
+DEVELOPER
+    The $me code is maintained at github.com/jkunze/docker-arknoid.
+    From within a cloned git repo, you can make changes, run tests,
+    and open a shell with commands such as these.
 
         \$ docker-compose build --no-cache $me
 	\$ docker-compose run $me $me test
 	\$ docker-compose run $me
-
-    That last command gives you an interactive shell within the container.
-    From there, for example, you could use these commands to create a minter,
-    to generate 1 ARK, and then to generate 2000 ARKs.
-
-        \$ $me mkminter 98765/z4
-	\$ $me mint 1 98765/z4
-	\$ $me mint 2000 98765/z4
 
 OPTIONS
     -f force run even if not inside a docker container
