@@ -1,5 +1,5 @@
 
-# SYNOPSIS                          (./arknoid)
+# SYNOPSIS
 arknoid - tool to mint ARK (Archival Resource Key) identifiers
 
 # USAGE
