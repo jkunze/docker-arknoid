@@ -118,17 +118,21 @@ ENVIRONMENT
 
         \$ docker run -it -d --rm --name arknoid jakkbl/arknoid
 
+    This command puts the container through a set of tests:
+
+        \$ docker run -it jakkbl/arknoid arknoid test
+
     To use a minter requires a one-time initialization of your NAAN, as in,
 
-        \$ docker exec -it arknoid arknoid init 12345
+        \$ docker exec -it jakkbl/arknoid arknoid init 12345
 
     The next command generates 3 strings suitable for assignment as ARKs:
 
-        \$ docker exec -it arknoid arknoid mint 3
+        \$ docker exec -it jakkbl/arknoid arknoid mint 3
 
     The next command opens an interactive shell into the container:
 
-        \$ docker exec -it arknoid /bin/bash
+        \$ docker exec -it jakkbl/arknoid /bin/bash
 
 DEVELOPER
     The $me code is maintained at github.com/jkunze/docker-arknoid.
@@ -146,7 +150,7 @@ OPTIONS
 	-v be more verbose
 
 FILES
-        ./minters/ark/<NAAN>/<Shoulder>
+        ./minters/ark/<NAAN>/<Shoulder>   keeps current minters states
 
 EOT
 }
