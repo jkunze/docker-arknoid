@@ -1,6 +1,6 @@
 
 # SYNOPSIS
-arknoid - tool to mint ARK (Archival Resource Key) identifiers
+arknoid - tool to create ARK (Archival Resource Key) identifiers
 
 # USAGE
     arknoid [options] init
@@ -13,19 +13,19 @@ arknoid - tool to mint ARK (Archival Resource Key) identifiers
     arknoid [ help ]
 
 # DESCRIPTION
-This script is used to mint globally unique, opaque, random-looking ARK
-(Archival Resource Key) identifiers. Here, "to mint" means to generate a
-string of letters and digits suitable for use as an ARK. To create an ARK
-is to publicize your assignment of a minted string to a thing (eg, for
-reference purposes). The less that you publicize your ARK assignment, the
-easier it is to "undo" the act of ARK creation.
+Archival Resource Keys (ARKs) are free, flexible, persistable identifiers.
+This script is used to generate globally unique, opaque, random-looking
+ARK strings that are suitable as persistent identifiers (PIDs). To create
+an ARK is to publicize the assignment to a thing (eg, for reference
+purposes) of a minted (generated) string. The less that that assignment is
+publicized, the easier it is to "undo" that act of ARK creation.
 
-To ensure ARK global uniqueness, the ARK namespace is divided into NAANs
-(Name Assigning Authority Numbers). NAANs are further (sub)divided into
-Shoulders, which are useful for delegating responsibility within NAAN
-namespaces. The arknoid script creates each minter on its own Shoulder,
-which looks like YOUR_NAAN/ED, where E is letter and D is a digit. Unless
-you specify it when making a minter, a random Shoulder will be created.
+To ensure global uniqueness, the ARK namespace is divided into NAANs
+(Name Assigning Authority Numbers). NAANs can be divided into Shoulders,
+which are useful for delegating responsibility within each NAAN namespace.
+The arknoid script creates each minter on its own Shoulder, which looks
+like YOUR_NAAN/ED, where E is letter and D is a digit. Unless you specify
+it when making a minter, a random Shoulder will be created.
 
 To run this script you will need a NAAN that will appear at the beginning
 of your ARKs. You may request a NAAN for your organization using the link
@@ -65,7 +65,7 @@ betanumeric ARKs with primordinal shoulders and check characters.
 
 # ENVIRONMENT
 This script was designed to run within its own docker container, although
-it may well run on any system in which the "noid" software is installed.
+it should run on any system where the "noid" software is installed.
 
 From a terminal window on a computer connected to the dockerhub ecosystem,
 a running container can be downloaded and built with
@@ -78,15 +78,15 @@ This command puts the container through a set of tests:
 
 To use a minter requires a one-time initialization of your NAAN, as in,
 
-    $ docker exec -it jakkbl/arknoid arknoid init 12345
+    $ docker exec -it arknoid arknoid init 12345
 
 The next command generates 3 strings suitable for assignment as ARKs:
 
-    $ docker exec -it jakkbl/arknoid arknoid mint 3
+    $ docker exec -it arknoid arknoid mint 3
 
 The next command opens an interactive shell into the container:
 
-    $ docker exec -it jakkbl/arknoid /bin/bash
+    $ docker exec -it arknoid /bin/bash
 
 # DEVELOPER
 The arknoid code is maintained at github.com/jkunze/docker-arknoid.
@@ -100,8 +100,8 @@ and open a shell with commands such as these.
 # OPTIONS
     -c on init, clear out any previous NAAN data
     -f force run even if not inside a docker container
-	-h show help information
-	-v be more verbose
+    -h show help information
+    -v be more verbose
 
 # FILES
     ./minters/ark/<NAAN>/<Shoulder>   keeps current minters states
