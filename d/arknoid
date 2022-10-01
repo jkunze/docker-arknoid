@@ -49,7 +49,7 @@ SYNOPSIS                          ($0)
     $me - tool to create ARK (Archival Resource Key) identifiers
 
 USAGE
-        $me [options] init
+        $me [options] init NAAN
         $me [options] mkminter [ NAAN[/Shoulder] ]
         $me [options] mint [ Count [ FQShoulder ] ]
         $me [options] testmint [ Count ]
@@ -88,7 +88,11 @@ DESCRIPTION
     must start with one or more betanumeric letters ($bletters) and
     end in a digit. The NAAN should be one that you have been assigned (eg,
     12345) via the global ARK NAAN registry. Each minter created with this
-    command can generate 70,728,100 unique ARKs.
+    command can generate 70,728,100 unique ARKs. As an example, to create a
+    minter on the shoulder, 12345/r4, and then mint 6 ARKs, you could run
+
+        $me mkminter 12345/r4
+        $me mint 6 12345/r4
 
     The "mint" command generates Count (default 1) strings suitable for ARK
     assignments from the "fully qualified" minter name, FQShoulder, which
@@ -106,8 +110,9 @@ DESCRIPTION
     Most commands exit with zero status on success and non-zero on error.
     It is possible to run init on more than one NAAN. This script uses the
     Noid (v0.424) software and adds several features such as default minter
-    and shoulder templates that conform to best practices for creating
-    betanumeric ARKs with primordinal shoulders and check characters.
+    and shoulder choices, as well as default templates that conform to best
+    practices for creating betanumeric ARKs with primordinal shoulders (that
+    follow the "first digit convention") and check characters.
 
 ENVIRONMENT
     This script was designed to run within its own docker container, although
@@ -213,17 +218,14 @@ function shoulder_pop {
 
 function naan_init {
 
-	naan=${1:-}
-	[[ ! "$naan" =~ $naanpattern ]] && {
-		echo "error: argument ($naan) should be 5 digits with" \
-			"no leading zero" 1>&2
+	# we advertize that we accept only a NAAN, but we accept a FQShoulder
+	shoulder_parse ${1:-} ||
 		return 1
-	}
-	local d=$mdir/$naan
-	[[ -d $d && "$clear" ]] &&
-		rm -fr $d
+	# if we get here, no error was found on any received shoulder
 
-	# Create a list of available shoulders from a master list of two-char
+	naan=$pnaan
+
+	# Need a list of available shoulders from a master list of two-char
 	# candidates XY, prescreened so that X is a betanumeric _letter_ and
 	# Y is a digit from 2-9. On init, that list is shuffled so that each
 	# NAAN uses up the list in a different NAAN-specific order. To get that
@@ -231,15 +233,25 @@ function naan_init {
 	# and the --random-source option stops reading when it has enough data.
 	# Each randomized run produces the same order for a given NAAN.
 
+	local d=$mdir/$naan
+	[[ -d $d && "$clear" ]] &&		# remove prior data
+		rm -fr $d
 	mkdir -p $d
-	sed -n '/^[b-z][2-9]$/p' original_shoulders \
-		| shuf --random-source=<(yes $naan) \
-		> $mdir/$naan/available_shoulders
+	local ashdrs=$mdir/$naan/available_shoulders
+	[[ ! -f $ashdrs ]] &&			# (re)create shoulder list
+		sed -n '/^[b-z][2-9]$/p' original_shoulders \
+			| shuf --random-source=<(yes $naan) \
+			> $mdir/$naan/available_shoulders
 
-	# Create two shoulders based on XY value popped from randomized list.
-	local shdr
-	shdr=$( shoulder_pop $naan ) ||
-		return 1
+	# Create a shoulder based on user input or by popping an XY value
+	# from the randomized list.
+	if [[ "$pshdr" ]]
+	then
+		shdr=$pshdr
+	else
+		shdr=$( shoulder_pop $naan ) ||
+			return 1
+	fi
 	mkminter $naan/$shdr ||
 		return 1
 }
@@ -249,14 +261,10 @@ function naan_init {
 
 function ark_init {
 
-	naan=${1:-}
-	[[ ! "$naan" =~ $naanpattern ]] && {
-		echo "error: argument ($naan) expected should be 5 digits" \
-			"with no leading zero" 1>&2
+	naan_init ${1:-} ||
 		return 1
-	}
-	naan_init $naan ||
-		return 1
+	[[ -d $mdir/$tnaan ]] &&
+		return 0	# don't re-init test NAAN if it already exists
 	naan_init $tnaan ||
 		return 1
 }
@@ -400,36 +408,28 @@ function ark_mint {
 
 	shoulder_parse ${2:-} ||
 		return 1
-	# if we get here, we received a valid or empty shoulder on a known NAAN
+	# if we get here, no error was found on any received shoulder
 
 	# $naan will already have been set during check for being initialized
-	# if the parsed NAAN is non-empty and different from the default NAAN,
-	# we'll need to abandon the shoulder we found earlier
+	# If the parsed NAAN/Shoulder is non-empty and different from the
+	# default, we'll need to use the parsed results instead, remembering
+	# that we might still need to find the default shoulder on
+	# a non-default NAAN.
 
 	[[ "$pnaan" ]] && {		# if NAAN needs defining
-		if [[ "$pnaan" != $naan ]]
+		if [[ "$pnaan" != $naan || "$pshdr" != $shdr ]]
 		then
-			naan=$pnaan	# use parsed NAAN and abandon shoulder
-			shdr=		# found earlier by unitializing it
+			naan=$pnaan	# use parsed NAAN and parsed shoulder
+			shdr=$pshdr	# NB: $pshdr might be empty
 		fi
-		# if here, $naan will be set correctly
-	}
-	[[ "$pnaan" && "$pnaan" != $naan ]] && {
-		naan=$pnaan	# use the new NAAN and abandon shoulder
-		shdr=		# found earlier by unitializing it
+		# if we get here, $naan will be set correctly
 	}
 	[[ ! "$shdr" ]] && {		# if shoulder needs defining
-		if [[ "$pshdr" ]]
-		then			# used parsed shoulder
-			shdr=$pshdr
-		else			# unless it's empty
-			ark_find_shoulder $naan || {
-				echo "error: no shoulder found under NAAN" \
-					"($naan)" 1>&2
-				return 1
-			}
-		fi
-		# if here, $shdr will have been re-set by ark_find_shoulder
+		ark_find_shoulder $naan || {
+			echo "error: no shoulder found under NAAN" \
+				"($naan)" 1>&2
+			return 1
+		}
 	}
 	noid -f $mdir/$naan/$shdr mint $count \
 		| sed -e 's/^id: /ark:/' -e '/^$/d'
@@ -484,6 +484,8 @@ function ark_test {
 		"cannot create a minter on an uninitialized NAAN"
         let n++; sctest $n "Created 88765/zz2" "$cmd mkminter 88765/zz2 " \
 		"created minter with user-designated 88765/zz2 shoulder"
+        let n++; sctest $n "ark:88765/zz24x54g13" "$cmd mint 1 88765/zz2 " \
+		"minted on user-designated non-test, 88765/zz2 shoulder"
         let n++; sctest $n "Created 88765/x8" "$cmd mkminter ark:/88765 " \
 		"created a second minter without designation"
         let n++; sctest $n "Created 99999/p2" "$cmd mkminter 99999 " \
@@ -498,12 +500,16 @@ function ark_test {
 		"mint 1 from default minter 88765/f7"
         let n++; sctest $n "99999/x84x54g17" "$cmd mint 1 ark:99999/x8 " \
 		"mint 1 from second test minter"
+        let n++; sctest $n "99999/x8154dn7s" "$cmd mint 1 99999/x8 " \
+		"mint 1 from second minter, given without ark: in front"
         let n++; sctest $n "p24x54g1w\n.*99999/p2154dn7f" "$cmd testmint 2 " \
 		"testmint 2 from first test minter"
         let n++; sctest $n "Created 88765/r7" "$cmd mkminter " \
-		"create minter with no desination"
+		"create minter with no designation"
         let n++; sctest $n "ark:88765/f7154dn7q" "$cmd mint 1 " \
 		"mint from default minter"
+        let n++; sctest $n "minters/ark/12765/g8" "$cmd init 12765/g8" \
+		"make another minter"
 	echo Ran $n tests.
 	return
 }

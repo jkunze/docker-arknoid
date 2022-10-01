@@ -3,7 +3,7 @@ SYNOPSIS                          (./arknoid)
     arknoid - tool to create ARK (Archival Resource Key) identifiers
 
 USAGE
-        arknoid [options] init
+        arknoid [options] init NAAN
         arknoid [options] mkminter [ NAAN[/Shoulder] ]
         arknoid [options] mint [ Count [ FQShoulder ] ]
         arknoid [options] testmint [ Count ]
@@ -42,7 +42,11 @@ DESCRIPTION
     must start with one or more betanumeric letters (bcdfghjkmnpqrstvwxz) and
     end in a digit. The NAAN should be one that you have been assigned (eg,
     12345) via the global ARK NAAN registry. Each minter created with this
-    command can generate 70,728,100 unique ARKs.
+    command can generate 70,728,100 unique ARKs. As an example, to create a
+    minter on the shoulder, 12345/r4, and then mint 6 ARKs, you could run
+
+        arknoid mkminter 12345/r4
+        arknoid mint 6 12345/r4
 
     The "mint" command generates Count (default 1) strings suitable for ARK
     assignments from the "fully qualified" minter name, FQShoulder, which
@@ -60,8 +64,9 @@ DESCRIPTION
     Most commands exit with zero status on success and non-zero on error.
     It is possible to run init on more than one NAAN. This script uses the
     Noid (v0.424) software and adds several features such as default minter
-    and shoulder templates that conform to best practices for creating
-    betanumeric ARKs with primordinal shoulders and check characters.
+    and shoulder choices, as well as default templates that conform to best
+    practices for creating betanumeric ARKs with primordinal shoulders (that
+    follow the "first digit convention") and check characters.
 
 ENVIRONMENT
     This script was designed to run within its own docker container, although
