@@ -1,6 +1,8 @@
 # Use mostly for multi-architecture builds and push to docker hub
 # Use docker-compose for ordinary stuff
 
+SHELL=/bin/bash
+
 # Thanks to https://gist.github.com/mpneuried/0594963ad38e68917ef189b4e6a269db
 # Requires gmake (GNU make)
 

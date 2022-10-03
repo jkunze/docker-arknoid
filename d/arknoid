@@ -56,7 +56,27 @@ USAGE
         $me [options] lsminter [ FQShoulder ... ]
         $me [options] rmminter FQShoulder ...
         $me [options] test
-        $me [ help ]
+        $me help
+
+QUICK START
+    If your organization doesn't have a NAAN, request one here:
+
+        $naanform
+
+    After you install docker on your host, build the $me container:
+
+        \$ docker run -it -d --rm --name $me jakkbl/$me
+
+    Initialize the system with your organization's 5-digit NAAN:
+
+        \$ docker exec -it $me $me init 12345
+
+    Mint enough unique ARK strings to assign to your 35865 objects:
+
+        \$ docker exec -it $me $me mint 36000 > MyFirstARKs
+
+    You can mint over 70 million on one minter, and make as many minters as
+    you want whenever you want. Your ARKs will be unique across all minters.
 
 DESCRIPTION
     Archival Resource Keys (ARKs) are free, flexible, persistable identifiers.
