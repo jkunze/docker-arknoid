@@ -141,26 +141,26 @@ ENVIRONMENT
     From a terminal window on a computer connected to the dockerhub ecosystem,
     a running container can be downloaded and built with
 
-        \$ docker run -it -d --rm --name arknoid jakkbl/arknoid
+        \$ docker run -it -d --rm --name $me jakkbl/$me
 
     This command puts the container through a set of tests:
 
-        \$ docker run -it jakkbl/arknoid arknoid test
+        \$ docker run -it jakkbl/$me $me test
 
     To use a minter requires a one-time initialization of your NAAN, as in,
 
-        \$ docker exec -it arknoid arknoid init 12345
+        \$ docker exec -it $me $me init 12345
 
     The next command generates 3 strings suitable for assignment as ARKs:
 
-        \$ docker exec -it arknoid arknoid mint 3
+        \$ docker exec -it $me $me mint 3
 
     The next command opens an interactive shell into the container:
 
-        \$ docker exec -it arknoid /bin/bash
+        \$ docker exec -it $me /bin/bash
 
 DEVELOPER
-    The $me code is maintained at github.com/jkunze/docker-arknoid.
+    The $me code is maintained at github.com/jkunze/docker-$me.
     From within a cloned git repo, you can make changes, run tests,
     and open a shell with commands such as these.
 
