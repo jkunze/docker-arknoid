@@ -1,5 +1,5 @@
-# Use mostly for multi-architecture builds and push to docker hub
-# Use docker-compose for ordinary stuff
+# Helps with README.md maintenance, multi-architecture builds, and push
+# to docker hub. May be better to use docker-compose for ordinary stuff.
 
 SHELL=/bin/bash
 
