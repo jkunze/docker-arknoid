@@ -10,10 +10,10 @@ arknoid - tool to create ARK (Archival Resource Key) identifiers
     arknoid [options] lsminter [ FQShoulder ... ]
     arknoid [options] rmminter FQShoulder ...
     arknoid [options] test
-    arknoid [ help ]
+    arknoid help
 
 # QUICK START
-If your organization doesn't have a 5-digit NAAN, request one here:
+If your organization doesn't have a NAAN, request one here:
 
     https://n2t.net/e/naan_request
 
@@ -21,18 +21,16 @@ After you install docker on your host, build the arknoid container:
 
     $ docker run -it -d --rm --name arknoid jakkbl/arknoid
 
-Initialize the system with your organization's NAAN:
+Initialize the system with your organization's 5-digit NAAN:
 
     $ docker exec -it arknoid arknoid init 12345
 
-Mint enough ARK strings to assign to your 35865 objects:
+Mint enough unique ARK strings to assign to your 35865 objects:
 
     $ docker exec -it arknoid arknoid mint 36000 > MyFirstARKs
 
-You can mint over 70 million on one minter, and make as many more minters
-as you want whenever you want. Put the system through its paces with.
-
-    $ docker run -it jakkbl/arknoid arknoid test
+You can mint over 70 million on one minter, and make as many minters as
+you want whenever you want. Your ARKs will be unique across all minters.
 
 # DESCRIPTION
 Archival Resource Keys (ARKs) are free, flexible, persistable identifiers.
