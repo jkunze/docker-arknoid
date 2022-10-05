@@ -118,9 +118,9 @@ The arknoid code is maintained at github.com/jkunze/docker-arknoid.
 From within a cloned git repo, you can make changes, run tests,
 and open a shell with commands such as these.
 
-    $ docker-compose build --no-cache arknoid
-    $ docker-compose run arknoid arknoid test
-    $ docker-compose run arknoid
+    $ docker compose build --no-cache arknoid
+    $ docker compose run arknoid arknoid test
+    $ docker compose run arknoid
 
 # OPTIONS
     -c on init, clear out any previous NAAN data

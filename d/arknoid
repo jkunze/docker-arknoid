@@ -180,6 +180,7 @@ FILES
 EOT
 }
 
+
 # returns 0 if a non-test shoulder is found, or 1 if not
 #   as a side-effect, sets the global default $naan and $shdr
 # takes one optional NAAN argument to restrict search to just that NAAN
