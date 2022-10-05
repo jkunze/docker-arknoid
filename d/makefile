@@ -42,7 +42,7 @@ dockerhub: mybuilder mabuild ## Push multi-architecture image to hub.docker.com
 mybuilder: ## Create and use mybuilder
 	docker buildx create --name mybuilder --use --bootstrap
 
-mabuild: repo-login ## Build multi-architecture image
+mabuild: repo-login ## Build multi-architecture image and push to dockerhub
 	docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t $(DOCKER_REPO)/$(APP_NAME) --push .
 
 # use /bin/echo below else -n isn't recognized
