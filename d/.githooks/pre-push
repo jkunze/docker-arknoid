@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+cd d/
+# multi-arch build
+#make mabuild

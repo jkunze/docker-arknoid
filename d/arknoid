@@ -164,9 +164,9 @@ DEVELOPER
     From within a cloned git repo, you can make changes, run tests,
     and open a shell with commands such as these.
 
-        \$ docker-compose build --no-cache $me
-        \$ docker-compose run $me $me test
-        \$ docker-compose run $me
+        \$ docker compose build --no-cache $me
+        \$ docker compose run $me $me test
+        \$ docker compose run $me
 
 OPTIONS
         -c on init, clear out any previous NAAN data
@@ -472,13 +472,12 @@ function sctest {
 	then
 		echo "$number OK - $description"
 		#echo "'$out' does match pattern '$pattern'"
+		return 0
 	else
 		echo "$number NOT OK - $description"
 		echo "'$out' does not match pattern '$pattern'"
+		return 1
 	fi
-	#[[ "$status" == 0 ]] || {
-	#	echo "error: '$command' return status: $status"
-	#}
 }
 
 function ark_test {
@@ -486,6 +485,7 @@ function ark_test {
 	local cmd=$me
 	local tdir=/tmp/arktest
 	local n=0
+	local errs=0
 	local opts=
 
 	rm -fr $tdir
@@ -495,43 +495,45 @@ function ark_test {
 	echo "Now running in $tdir as current directory."
 
         let n++; sctest $n "error:.*init.*first" "$cmd mkminter 88765/z4 " \
-		"initialization required before mkminter"
+		"initialization required before mkminter" || let errs++
         let n++; sctest $n "minters/ark/88765/f7.*/99999/x8" "$cmd init 88765" \
-		"initialization created minters on given and test NAANs"
+		"init created minters on given and test NAANs" || let errs++
         let n++; sctest $n "minters/ark/88765/f7.*/99999/x8" "$cmd lsminter " \
-		"lsminter shows given NAAN and test NAAN"
+		"lsminter shows given NAAN and test NAAN" || let errs++
         let n++; sctest $n "error: bad NAAN" "$cmd mkminter 12125" \
-		"cannot create a minter on an uninitialized NAAN"
+		"cannot create a minter on an uninitialized NAAN" || let errs++
         let n++; sctest $n "Created 88765/zz2" "$cmd mkminter 88765/zz2 " \
-		"created minter with user-designated 88765/zz2 shoulder"
+		"minter on user-specified 88765/zz2 shoulder" || let errs++
         let n++; sctest $n "ark:88765/zz24x54g13" "$cmd mint 1 88765/zz2 " \
-		"minted on user-designated non-test, 88765/zz2 shoulder"
+		"minted on user-specified non-test, shoulder" || let errs++
         let n++; sctest $n "Created 88765/x8" "$cmd mkminter ark:/88765 " \
-		"created a second minter without designation"
+		"created a second minter without designation" || let errs++
         let n++; sctest $n "Created 99999/p2" "$cmd mkminter 99999 " \
-		"created a second 99999 minter without designation"
+		"second 99999 minter without designation" || let errs++
         let n++; sctest $n \
 		"ark/88765/f7\n.*/x8\n.*/zz2\n.*99999/p2\n.*99999/x8" \
-		"$cmd lsminter " "lsminter finds 5 minters"
+		"$cmd lsminter " "lsminter finds 5 minters" || let errs++
         let n++; sctest $n "ark/88765/f7\n.*/x8\n.*99999/p2\n.*99999/x8" \
 		"$cmd rmminter 88765/zz2; $cmd lsminter " \
-		"rmminter leaves 4 minters"
+		"rmminter leaves 4 minters" || let errs++
         let n++; sctest $n "f74x54g15" "$cmd mint 1 " \
-		"mint 1 from default minter 88765/f7"
+		"mint 1 from default minter 88765/f7" || let errs++
         let n++; sctest $n "99999/x84x54g17" "$cmd mint 1 ark:99999/x8 " \
-		"mint 1 from second test minter"
+		"mint 1 from second test minter" || let errs++
         let n++; sctest $n "99999/x8154dn7s" "$cmd mint 1 99999/x8 " \
-		"mint 1 from second minter, given without ark: in front"
+		"mint 1 from second minter, without ark: in front" || let errs++
         let n++; sctest $n "p24x54g1w\n.*99999/p2154dn7f" "$cmd testmint 2 " \
-		"testmint 2 from first test minter"
+		"testmint 2 from first test minter" || let errs++
         let n++; sctest $n "Created 88765/r7" "$cmd mkminter " \
-		"create minter with no designation"
+		"create minter with no designation" || let errs++
         let n++; sctest $n "ark:88765/f7154dn7q" "$cmd mint 1 " \
-		"mint from default minter"
+		"mint from default minter" || let errs++
         let n++; sctest $n "minters/ark/12765/g8" "$cmd init 12765/g8" \
-		"make another minter"
-	echo Ran $n tests.
-	return
+		"make another minter" || let errs++
+	echo Ran $n tests, error count $errs.
+	[[ $errs > 0 ]] &&
+		return 1
+	return 0
 }
 
 #==========================

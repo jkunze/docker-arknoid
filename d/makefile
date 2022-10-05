@@ -1,5 +1,5 @@
-# Helps with README.md maintenance, multi-architecture builds, and push
-# to docker hub. May be better to use docker-compose for ordinary stuff.
+# Helps with git hooks for README.md maintenance, testing, multi-architecture
+# builds, and pushing images to docker hub.
 
 SHELL=/bin/bash
 
@@ -28,18 +28,21 @@ shell: ## Set up an interactive shell to container
 	docker exec -it $(APP_NAME) /bin/bash
 
 build: ## Build container
-	docker build --tag $(APP_NAME) .
-
-build-nc: ## Build container without caching
-	docker build --no-cache --tag $(APP_NAME) .
+	#docker build --tag $(APP_NAME) .
+	docker compose build --no-cache $(APP_NAME)
 
 run: ## Run container, detached (and removed after stopping)
-	docker run -it -d --rm --name $(APP_NAME) -v "$(PWD)":$(DIR) -w $(DIR) $(APP_NAME)
+	docker compose run $(APP_NAME)
+
+test: build ## Run application tests in the container
+	docker compose run -T $(APP_NAME) $(APP_NAME) test
+
+dockerhub: mybuilder mabuild ## Push multi-architecture image to hub.docker.com
 
 mybuilder: ## Create and use mybuilder
 	docker buildx create --name mybuilder --use --bootstrap
 
-mabuild: ## Build multi-architecture image
+mabuild: repo-login ## Build multi-architecture image
 	docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t $(DOCKER_REPO)/$(APP_NAME) --push .
 
 # use /bin/echo below else -n isn't recognized
