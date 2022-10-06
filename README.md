@@ -52,8 +52,11 @@ of your ARKs. You may request a NAAN for your organization using the link
 
     https://n2t.net/e/naan_request
 
-Use the "init" command to initialize the system with the NAAN reserved
-for you (usually a 5-digit number), or with the test NAAN, 99999.
+Use the "init" command to initialize the system once and for all with the
+NAAN (usually a 5-digit number) that you reserved for your institution or
+with the test NAAN, 99999. For example,
+
+    arknoid init 12345
 
 The "mkminter" command creates a minter of unique opaque strings consisting
 of digits, letters (betanumerics actually) and a final check character.

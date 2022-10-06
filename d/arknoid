@@ -48,16 +48,6 @@ function usage {
 SYNOPSIS                          ($0)
     $me - tool to create ARK (Archival Resource Key) identifiers
 
-USAGE
-        $me [options] init NAAN
-        $me [options] mkminter [ NAAN[/Shoulder] ]
-        $me [options] mint [ Count [ FQShoulder ] ]
-        $me [options] testmint [ Count ]
-        $me [options] lsminter [ FQShoulder ... ]
-        $me [options] rmminter FQShoulder ...
-        $me [options] test
-        $me help
-
 QUICK START
     If your organization doesn't have a NAAN, request one here:
 
@@ -77,6 +67,16 @@ QUICK START
 
     You can mint over 70 million on one minter, and make as many minters as
     you want whenever you want. Your ARKs will be unique across all minters.
+
+USAGE
+        $me [options] init NAAN
+        $me [options] mkminter [ NAAN[/Shoulder] ]
+        $me [options] mint [ Count [ FQShoulder ] ]
+        $me [options] testmint [ Count ]
+        $me [options] lsminter [ FQShoulder ... ]
+        $me [options] rmminter FQShoulder ...
+        $me [options] test
+        $me help
 
 DESCRIPTION
     Archival Resource Keys (ARKs) are free, flexible, persistable identifiers.
