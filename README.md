@@ -2,16 +2,6 @@
 # SYNOPSIS
 arknoid - tool to create ARK (Archival Resource Key) identifiers
 
-# USAGE
-    arknoid [options] init NAAN
-    arknoid [options] mkminter [ NAAN[/Shoulder] ]
-    arknoid [options] mint [ Count [ FQShoulder ] ]
-    arknoid [options] testmint [ Count ]
-    arknoid [options] lsminter [ FQShoulder ... ]
-    arknoid [options] rmminter FQShoulder ...
-    arknoid [options] test
-    arknoid help
-
 # QUICK START
 If your organization doesn't have a NAAN, request one here:
 
@@ -31,6 +21,16 @@ Mint enough unique ARK strings to assign to your 35865 objects:
 
 You can mint over 70 million on one minter, and make as many minters as
 you want whenever you want. Your ARKs will be unique across all minters.
+
+# USAGE
+    arknoid [options] init NAAN
+    arknoid [options] mkminter [ NAAN[/Shoulder] ]
+    arknoid [options] mint [ Count [ FQShoulder ] ]
+    arknoid [options] testmint [ Count ]
+    arknoid [options] lsminter [ FQShoulder ... ]
+    arknoid [options] rmminter FQShoulder ...
+    arknoid [options] test
+    arknoid help
 
 # DESCRIPTION
 Archival Resource Keys (ARKs) are free, flexible, persistable identifiers.
