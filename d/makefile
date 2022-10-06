@@ -2,6 +2,7 @@
 # builds, and pushing images to docker hub.
 
 SHELL=/bin/bash
+GITLINKS= ../.git/hooks/pre-commit ../.git/hooks/pre-push
 
 # Thanks to https://gist.github.com/mpneuried/0594963ad38e68917ef189b4e6a269db
 # Requires gmake (GNU make)
@@ -28,7 +29,6 @@ shell: ## Set up an interactive shell to container
 	docker exec -it $(APP_NAME) /bin/bash
 
 build: ## Build container
-	#docker build --tag $(APP_NAME) .
 	docker compose build --no-cache $(APP_NAME)
 
 run: ## Run container, detached (and removed after stopping)
@@ -72,10 +72,16 @@ manpage: ../README.md ## Generate plain text manual page and README.md
 		> ../README.md
 
 .PHONY: help
-help: ## This help information
+help: $(GITLINKS) ## This help information
 	@echo Makefile targets in this directory are for docker hub repo: $(DOCKER_REPO)/$(APP_NAME)
 	@echo Use 'make mybuilder mabuild' to create and push image to hub.docker.com.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-17s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+../.git/hooks/pre-commit:
+	(cd ../.git/hooks; ln -s ../../d/.githooks/pre-commit .)
+
+../.git/hooks/pre-push:
+	(cd ../.git/hooks; ln -s ../../d/.githooks/pre-push .)
 
 # Docker publish
 publish: repo-login publish-latest publish-version ## Publish the `{version}` and `latest` tagged containers
