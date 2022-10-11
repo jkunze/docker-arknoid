@@ -15,12 +15,17 @@ Initialize the system with your organization's 5-digit NAAN:
 
     $ docker exec -it arknoid arknoid init 12345
 
-Mint enough unique ARK strings to assign to your 35865 objects:
+Mint one ARK string with
+
+    $ docker exec -it arknoid arknoid mint 1
+	ark:12345/h74x54g19
+
+Mint enough unique ARK strings to assign to your 35865 objects with
 
     $ docker exec -it arknoid arknoid mint 36000 > MyFirstARKs
 
-You can mint over 70 million on one minter, and make as many minters as
-you want whenever you want. Your ARKs will be unique across all minters.
+You can mint over 70 million ARKs with one minter, and make as many minters
+as you want whenever you want. Your ARKs will be unique across all minters.
 
 # USAGE
     arknoid [options] init NAAN
@@ -93,7 +98,7 @@ follow the "first digit convention") and check characters.
 
 # ENVIRONMENT
 This script was designed to run within its own docker container, although
-it should run on any system where the "noid" software is installed.
+it should run on any system where the Noid software is installed.
 
 From a terminal window on a computer connected to the dockerhub ecosystem,
 a running container can be downloaded and built with
@@ -116,6 +121,11 @@ The next command opens an interactive shell into the container:
 
     $ docker exec -it arknoid /bin/bash
 
+Minter state is preserved in the "./minters/" directory using a private
+docker volume when the container is stopped and restarted, but state is
+purged when a container is rebuilt. You may be able to explore or export
+minter state using the interactive shell.
+
 # DEVELOPER
 The arknoid code is maintained at github.com/jkunze/docker-arknoid.
 From within a cloned git repo, you can make changes, run tests,
@@ -124,6 +134,14 @@ and open a shell with commands such as these.
     $ docker compose build --no-cache arknoid
     $ docker compose run arknoid arknoid test
     $ docker compose run arknoid
+
+# LIMITATIONS
+In being a simplified interface to the Noid software, this script uses
+a fixed identifier template. As fo any Noid template, the algorithm runs
+out of identifier strings at a certain point. Newer, unlimited algorithms
+are under development and will be released to the ARK community, but there
+are no known plans to fundamentally change either this script or the Noid
+software.
 
 # OPTIONS
     -c on init, clear out any previous NAAN data
