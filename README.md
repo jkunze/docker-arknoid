@@ -65,7 +65,7 @@ with the test NAAN, 99999. For example,
 
 The "mkminter" command creates a minter of unique opaque strings consisting
 of digits, letters (betanumerics actually) and a final check character.
-With no arugment, it creates a random shoulder using your NAAN, but you may
+With no argument, it creates a random shoulder using your NAAN, but you may
 also specify a fully qualified shoulder of your choice. A Shoulder string
 must start with one or more betanumeric letters (bcdfghjkmnpqrstvwxz) and
 end in a digit. The NAAN should be one that you have been assigned (eg,
